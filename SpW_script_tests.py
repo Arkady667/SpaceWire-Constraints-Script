@@ -51,28 +51,26 @@ try:
             if line.find("Path") != (-1):
                  path_number += 1
                  path_data.append(path_number)
-                 print "LICZBA PATHU"
             elif not line.strip():  # ignores empty line (whitespaces)
-                print "PUSTA"
                 continue
             else:
-                print "DANE"
                 line_one_space = " ".join(line.split())
                 line_one_space = line_one_space.split(" ")
-                print line_one_space[1]
-                if line_one_space.find(":") != (-1):
-                    line_one_space = line_one_space.replace(":", "")
-                    if line_one_space.find(" (ns)") != (-1):
-                        line_one_space = line_one_space.replace(" (ns)","(ns)")
-                ##### TU DO ROBOTY
-                path_data.append(line_one_space[2])
-                print line_one_space[2]
+                if any("(ns):" in i for i in line_one_space):
+                    line_one_space.remove("(ns):")
+                if len(line_one_space) == 1:
+                    line_one_space.append("-")
+                path_data.append(line_one_space[1])
             if len(path_data) == 7:
                 if stb_flag == 1:
                     add_path_strobe(path_data[0], path_data[1], path_data[2], path_data[3], path_data[4], path_data[5], path_data[6])
+                    path_data[:] = []
+                    if path_number == 6:
+                        path_number = 0
                 if dat_flag == 1:
                     add_path_data(path_data[0], path_data[1], path_data[2], path_data[3], path_data[4], path_data[5],
                                     path_data[6])
+                    path_data[:] = []
             if line.find("#") != (-1):
                 start = 0
     f.close()
