@@ -15,7 +15,7 @@
 #					  [int] 1 - ON
 #	 			OTHER or NONE - OFF
 # running from cmd (with error handling option)
-# designer "SCRIPT:spw.tcl iSpw0Stb iSpw0Dat *r.do* 1" "SCRIPT_DIR:C:\Users\aczuba\TCL\spw_script" "LOGFILE:spw_report.log"
+# <path to>designer.exe "SCRIPT:spw.tcl iSpw0Stb iSpw0Dat *r.do* 1" "SCRIPT_DIR:C:\Users\aczuba\TCL\spw_script" "LOGFILE:spw_report.log"
 ######################################################
 # Assign global argv variables to new variables
 set argv0 [lindex $::argv 0]
@@ -39,7 +39,7 @@ puts "$argv2 is argv2"
 puts "$argv3 is argv3"
 
 # Variable which contain path to existing Designer design (.adb)
-set designFileTest {C:\Users\aczuba\TCL\spw_script\P3_DPU.adb} 
+set designFileTest {C:\Users\aczuba\PycharmProjects\SpaceWire-Constraints\P3_DPU.adb} 
 set designFile {C:\DPU FPGA repo v2\alllib\designs\P3CCB_RT\P3_DPU.adb}
 puts $designFile
 
