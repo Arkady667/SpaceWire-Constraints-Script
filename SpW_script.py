@@ -135,8 +135,34 @@ def add_path_data(number, ffrom, to, delay, slack, arrival, required):
     spw_timing_report_list.append(path_data_dic)
 
 
+def shortest_data_to_ff_d ():
+    print ""
+
+
+def longest_data_to_ff_d():
+    max_delay = []
+    for path in spw_timing_report_list:
+        if path["type"] == "Data" and path["to"].find(":D") != (-1):
+            max_delay.append(path["delay"])
+    print max_delay
+    return max(max_delay)
+
+
+def shortest_strobe_to_ff_clk():
+    print ""
+
+
+def longest_strobe_to_ff_clk():
+    print ""
+
+
+def longest_data_to_ff_clk():
+    print ""
+
+
 def main(tcl_script_path, stb_in_name, dat_in_name, reg_filter, error_flag):
     tcl_script(tcl_script_path, stb_in_name, dat_in_name, reg_filter, error_flag)
+    longest_data_to_ff_d()
 
 
 if __name__ == "__main__":
