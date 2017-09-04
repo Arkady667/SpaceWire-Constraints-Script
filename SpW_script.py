@@ -4,7 +4,6 @@
 
 import sys
 import subprocess
-import time
 import os.path
 import datetime
 
@@ -24,8 +23,10 @@ def tcl_script(tcl_script_path, stb_in_name, dat_in_name, reg_filter, error_flag
     # line_one_space = []
     path_data = []
     path_number = 0
-    stb_flag = 0
-    dat_flag = 0
+    stb_flag_r = 0
+    dat_flag_r = 0
+    stb_flag_f = 0
+    dat_flag_f = 0
     start = 0
 
     # spw_timing_report_modtime = os.path.getmtime(tcl_script_path + r"\report_spw_timing.log")
@@ -48,15 +49,23 @@ def tcl_script(tcl_script_path, stb_in_name, dat_in_name, reg_filter, error_flag
         f = open('spw_report.log', mode="rt")
         for line in f.readlines():
             # Looking for particular string in file, and takes flag up to parse Strobe part
-            if line.find("iSpwStbToCLK") != (-1):
-                stb_flag = 1
+            if line.find("iSpwStbToCLK-RISE") != (-1):
+                stb_flag_r = 1
                 # Simple flag to chceck that proper lines are analysed, and avoid useless lines
                 start = 1
                 continue
             # Looking for particular string in file, and takes flag up to parse Data part
-            if line.find("iSpwDatToReg") != (-1):
-                dat_flag = 1
-                stb_flag = 0
+            if line.find("iSpwDatToReg-RISE") != (-1):
+                dat_flag_r = 1
+                stb_flag_r = 0
+                continue
+            if line.find("iSpwStbToCLK-FALL") != (-1):
+                dat_flag_r = 0
+                stb_flag_f = 1
+                continue
+            if line.find("iSpwDatToReg-FALL") != (-1):
+                dat_flag_f = 1
+                stb_flag_f = 0
                 continue
             if start == 1:
                 # Looking for "Path" in log. When finds, append path number to path_data
@@ -65,6 +74,7 @@ def tcl_script(tcl_script_path, stb_in_name, dat_in_name, reg_filter, error_flag
                     path_data.append(path_number)
                 # if finds empty line - continue
                 elif not line.strip():  # ignores empty line (whitespaces)
+                    path_number = 0
                     continue
                 # Main parsing process
                 else:
@@ -83,17 +93,25 @@ def tcl_script(tcl_script_path, stb_in_name, dat_in_name, reg_filter, error_flag
                 # Checks length of path list. One path has 7 parameters
                 if len(path_data) == 7:
                     # Adds data to main list - spw_timing_report_list
-                    if stb_flag == 1:
-                        add_path_strobe(path_data[0], path_data[1], path_data[2], path_data[3], path_data[4],
+                    if stb_flag_r == 1:
+                        add_path_strobe_r(path_data[0], path_data[1], path_data[2], path_data[3], path_data[4],
                                         path_data[5], path_data[6])
                         path_data[:] = []
-                        if path_number == 6:
-                            path_number = 0
                     # Adds data to main list - spw_timing_report_list
-                    if dat_flag == 1:
-                        add_path_data(path_data[0], path_data[1], path_data[2], path_data[3], path_data[4],
+                    if dat_flag_r == 1:
+                        add_path_data_r(path_data[0], path_data[1], path_data[2], path_data[3], path_data[4],
                                       path_data[5],
                                       path_data[6])
+                        path_data[:] = []
+                    # Adds data to main list - spw_timing_report_list
+                    if stb_flag_f == 1:
+                        add_path_strobe_f(path_data[0], path_data[1], path_data[2], path_data[3], path_data[4],
+                                          path_data[5], path_data[6])
+                        path_data[:] = []
+                    # Adds data to main list - spw_timing_report_list
+                    if dat_flag_f == 1:
+                        add_path_data_f(path_data[0], path_data[1], path_data[2], path_data[3], path_data[4],
+                                          path_data[5], path_data[6])
                         path_data[:] = []
                 # Searches for "#". "#" mean end of parsing
                 if line.find("#") != (-1):
@@ -105,9 +123,10 @@ def tcl_script(tcl_script_path, stb_in_name, dat_in_name, reg_filter, error_flag
     print spw_timing_report_list
 
 
-def add_path_strobe(number, ffrom, to, delay, slack, arrival, required):
+def add_path_strobe_r(number, ffrom, to, delay, slack, arrival, required):
 
-    path_strobe_dic = {
+    path_strobe_r = {
+        "clock": "rise",
         "type": "Strobe",
         "number": number,
         "from": ffrom,
@@ -117,12 +136,29 @@ def add_path_strobe(number, ffrom, to, delay, slack, arrival, required):
         "arrival": arrival,
         "required": required
     }
-    spw_timing_report_list.append(path_strobe_dic)
+    spw_timing_report_list.append(path_strobe_r)
 
 
-def add_path_data(number, ffrom, to, delay, slack, arrival, required):
+def add_path_strobe_f(number, ffrom, to, delay, slack, arrival, required):
 
-    path_data_dic = {
+    path_strobe_f = {
+        "clock": "fall",
+        "type": "Strobe",
+        "number": number,
+        "from": ffrom,
+        "to": to,
+        "delay": delay,
+        "slack": slack,
+        "arrival": arrival,
+        "required": required
+    }
+    spw_timing_report_list.append(path_strobe_f)
+
+
+def add_path_data_r(number, ffrom, to, delay, slack, arrival, required):
+
+    path_data_r = {
+        "clock": "rise",
         "type": "Data",
         "number": number,
         "from": ffrom,
@@ -132,37 +168,125 @@ def add_path_data(number, ffrom, to, delay, slack, arrival, required):
         "arrival": arrival,
         "required": required
     }
-    spw_timing_report_list.append(path_data_dic)
+    spw_timing_report_list.append(path_data_r)
 
 
-def shortest_data_to_ff_d ():
-    print ""
+def add_path_data_f(number, ffrom, to, delay, slack, arrival, required):
+
+    path_data_f = {
+        "clock": "fall",
+        "type": "Data",
+        "number": number,
+        "from": ffrom,
+        "to": to,
+        "delay": delay,
+        "slack": slack,
+        "arrival": arrival,
+        "required": required
+    }
+    spw_timing_report_list.append(path_data_f)
 
 
-def longest_data_to_ff_d():
+def data_to_ff_d(fall_or_rise, long_or_short):
+    min_delay = []
     max_delay = []
     for path in spw_timing_report_list:
-        if path["type"] == "Data" and path["to"].find(":D") != (-1):
-            max_delay.append(path["delay"])
-    print max_delay
-    return max(max_delay)
+        if long_or_short == "longest":
+            if fall_or_rise == "rise":
+                if path["type"] == "Data" and path["to"].find(":D" and "[1]") != (-1) and path["clock"] == "rise":
+                    min_delay.append(path["delay"])
+                    return min(min_delay)
+            elif fall_or_rise == "fall":
+                if path["type"] == "Data" and path["to"].find(":D" and ("nr.d:" or "nr.d_")) != (-1) and path["clock"] == "fall":
+                    min_delay.append(path["delay"])
+                    return min(min_delay)
+            else:
+                print "WARNING (data_to_ff_d): Wrong second argument. Write 'rise' or 'fall'"
+        elif long_or_short == "shortest":
+            if fall_or_rise == "rise":
+                if path["type"] == "Data" and path["to"].find(":D" and "[1]") != (-1) and path["clock"] == "rise":
+                    max_delay.append(path["delay"])
+                    return max(max_delay)
+            elif fall_or_rise == "fall":
+                if path["type"] == "Data" and path["to"].find(":D" and ("nr.d:" or "nr.d_")) != (-1) and path["clock"] == "fall":
+                    max_delay.append(path["delay"])
+                    return max(max_delay)
+            else:
+                print "WARNING (data_to_ff_d): Wrong second argument. Write 'rise' or 'fall'"
+        else:
+            print "WARNING (data_to_ff_d): Wrong first argument. Write 'longest' or 'shortest'"
 
 
-def shortest_strobe_to_ff_clk():
-    print ""
+def data_to_ff_clk(fall_or_rise, long_or_short):
+    max_delay = []
+    min_delay = []
+    for path in spw_timing_report_list:
+        if long_or_short == "longest":
+            if fall_or_rise == "rise":
+                if path["type"] == "Data" and path["to"].find(":CLK" and "[1]") != (-1) and path["clock"] == "rise":
+                    max_delay.append(path["delay"])
+                    return max(max_delay)
+            elif fall_or_rise == "fall":
+                if path["type"] == "Data" and path["to"].find(":CLK" and ("nr.d:" or "nr.d_")) != (-1) and path["clock"] == "fall":
+                    max_delay.append(path["delay"])
+                    return max(max_delay)
+            else:
+                print "WARNING (data_to_ff_clk): Wrong second argument. Write 'rise' or 'fall'"
+        elif long_or_short == "shortest":
+            if fall_or_rise == "rise":
+                if path["type"] == "Data" and path["to"].find(":CLK" and "[1]") != (-1) and path["clock"] == "rise":
+                    min_delay.append(path["delay"])
+                    return min(min_delay)
+            elif fall_or_rise == "fall":
+                if path["type"] == "Data" and path["to"].find(":CLK" and ("nr.d:" or "nr.d_")) != (-1) and path["clock"] == "fall":
+                    min_delay.append(path["delay"])
+                    return min(min_delay)
+            else:
+                print "WARNING (data_to_ff_clk): Wrong second argument. Write 'rise' or 'fall'"
+        else:
+            print "WARNING (data_to_ff_clk): Wrong first argument. Write 'longest' or 'shortest'"
 
 
-def longest_strobe_to_ff_clk():
-    print ""
-
-
-def longest_data_to_ff_clk():
-    print ""
+def strobe_to_ff_clk(fall_or_rise, long_or_short):
+    min_delay = []
+    max_delay = []
+    for path in spw_timing_report_list:
+        if long_or_short == "longest":
+            if fall_or_rise == "rise":
+                if path["type"] == "Data" and path["to"].find(":CLK" and "[1]") != (-1) and path["clock"] == "rise":
+                    min_delay.append(path["delay"])
+                    return min(min_delay)
+            elif fall_or_rise == "fall":
+                if path["type"] == "Data" and path["to"].find(":CLK" and ("nr.d:" or "nr.d_")) != (-1) and path["clock"] == "fall":
+                    min_delay.append(path["delay"])
+                    return min(min_delay)
+            else:
+                print "WARNING (strobe_to_ff_clk): Wrong second argument. Write 'rise' or 'fall'"
+        elif long_or_short == "shortest":
+            if fall_or_rise == "rise":
+                if path["type"] == "Data" and path["to"].find(":CLK" and "[1]") != (-1) and path["clock"] == "rise":
+                    max_delay.append(path["delay"])
+                    return max(max_delay)
+            elif fall_or_rise == "fall":
+                if path["type"] == "Data" and path["to"].find(":CLK" and ("nr.d:" or "nr.d_")) != (-1) and path["clock"] == "fall":
+                    max_delay.append(path["delay"])
+                    return max(max_delay)
+            else:
+                print "WARNING (strobe_to_ff_clk): Wrong second argument. Write 'rise' or 'fall'"
+        else:
+            print "WARNING (strobe_to_ff_clk): Wrong first argument. Write 'longest' or 'shortest'"
 
 
 def main(tcl_script_path, stb_in_name, dat_in_name, reg_filter, error_flag):
     tcl_script(tcl_script_path, stb_in_name, dat_in_name, reg_filter, error_flag)
-    longest_data_to_ff_d()
+    print spw_timing_report_list
+    # print "data_to_ff_d() :" + data_to_ff_d("longest", "rise")
+    # print "data_to_ff_d() :" + data_to_ff_d("longest", "fall")
+    # print "data_to_ff_clk() :" + data_to_ff_clk("longest", "rise")
+    # print "data_to_ff_clk() :" + data_to_ff_clk("shortest", "rise")
+    # print "strobe_to_ff_clk() :" + strobe_to_ff_clk("longest", "rise")
+    # print "strobe_to_ff_clk() :" + strobe_to_ff_clk("shortest", "fall")
+
 
 
 if __name__ == "__main__":
