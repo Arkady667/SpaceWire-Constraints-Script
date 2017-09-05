@@ -5,10 +5,17 @@
 import sys
 import subprocess
 import os.path
-import datetime
+import xlwt
 
-start_time = datetime.datetime
+# Constants (RT ProASIC3)
+BIT_PERIOD = 20  # na
+FF_SETUP = 0.4  # na
+FF_HOLD = 0  # na
 
+# xlwr
+wb = xlwt.Workbook()
+
+# Data list
 spw_timing_report_list = []
 
 # tcl_script_path = r"C:\Users\aczuba\PycharmProjects\SpaceWire Constraints"
@@ -17,6 +24,9 @@ spw_timing_report_list = []
 # reg_filter = r"*r.do*"
 ##
 
+
+def get_width(num_char):
+    return int((1 + num_char) * 256)
 
 
 def tcl_script(tcl_script_path, stb_in_name, dat_in_name, reg_filter_rise, reg_filter_fall, error_flag):
@@ -123,6 +133,87 @@ def tcl_script(tcl_script_path, stb_in_name, dat_in_name, reg_filter_rise, reg_f
         print("Could not read file")
         print(error)
     # print spw_timing_report_list
+
+
+def excel():
+
+
+
+    excel_doc()
+    setup_sheet = wb.add_sheet('Setup Check')
+    hold_sheet = wb.add_sheet('Hold Check')
+    pulsewidth_sheet = wb.add_sheet('Pulse Width Check')
+
+    wb.save('SpW Constraints.xls')
+
+
+def excel_doc():
+    style1 = xlwt.XFStyle()
+    style2 = xlwt.XFStyle()
+    style3 = xlwt.XFStyle()
+
+    styleHeader = xlwt.XFStyle()
+    styleHeader.font.bold = True
+    styleHeader.font.height = 250
+
+    styleFormulaLeft = xlwt.XFStyle()
+    styleFormulaLeft.font.italic = True
+    styleFormulaLeft.font.height = 200
+    styleFormulaLeft.alignment.horz = styleFormulaLeft.alignment.HORZ_RIGHT
+
+    styleFormulaRight = xlwt
+
+    font_bold = xlwt.Font()
+    font_italic = xlwt.Font()
+    font_height = xlwt.Font()
+
+    font_bold.bold = True
+    font_italic.italic = True
+    font_height.height = 300
+
+    style1.font = font_bold
+    style2.font = font_italic
+    style3.font = font_height
+
+    doc = wb.add_sheet('Formulas')
+    doc.write(1, 1, "Setup Check Formula", style=styleHeader)
+
+    col2 = doc.col(1)
+    col2.width = 256 * 35
+    doc.write(3, 1, "Longest (Data to FF:D", style=styleFormulaLeft)
+
+    col3 = doc.col(2)
+    col3.width = 256 * 5
+    doc.write(3, 2, "<", style=style3)
+
+    col4 = doc.col(3)
+    col4.width = 256 * 35
+    doc.write(3, 3, "Shortest (Data to FF:CLK) - FF Setup", style=style2)
+
+    row2 = doc.row(1)
+    row2.height = 350
+    row4 = doc.row(3)
+    row4.height = 350
+
+
+# def excel_setup():
+#     pass
+#
+#
+# def excel_hold():
+#     pass
+#
+#
+# def excel_pulse():
+#     pass
+#
+#
+# def excel_exe():
+#
+#     excel_doc()
+#     excel_setup()
+#     excel_hold()
+#     excel_pulse()
 
 
 def add_path_strobe(fall_or_rise, number, ffrom, to, delay, slack, arrival, required):
@@ -291,22 +382,24 @@ def strobe_to_ff_clk(long_or_short, fall_or_rise):
 
 
 
+
 def main(tcl_script_path, stb_in_name, dat_in_name, reg_filter_rise,reg_filter_fall, error_flag):
     tcl_script(tcl_script_path, stb_in_name, dat_in_name, reg_filter_rise, reg_filter_fall, error_flag)
-    print spw_timing_report_list
-    print "data_to_ff_d() :" + data_to_ff_d("longest", "rise")
-    print "data_to_ff_d() :" + data_to_ff_d("shortest", "rise")
-    print "data_to_ff_clk() :" + data_to_ff_clk("longest", "rise")
-    print "data_to_ff_clk() :" + data_to_ff_clk("shortest", "rise")
-    print "strobe_to_ff_clk() :" + strobe_to_ff_clk("shortest", "rise")
-    print "strobe_to_ff_clk() :" + strobe_to_ff_clk("longest", "rise")+"\n"
-
-    print "data_to_ff_d() :" + data_to_ff_d("longest", "fall")
-    print "data_to_ff_d() :" + data_to_ff_d("shortest", "fall")
-    print "data_to_ff_clk() :" + data_to_ff_clk("longest", "fall")
-    print "data_to_ff_clk() :" + data_to_ff_clk("shortest", "fall")
-    print "strobe_to_ff_clk() :" + strobe_to_ff_clk("shortest", "fall")
-    print "strobe_to_ff_clk() :" + strobe_to_ff_clk("longest", "fall")
+    excel()
+    # print spw_timing_report_list
+    # print "data_to_ff_d() :" + data_to_ff_d("longest", "rise")
+    # print "data_to_ff_d() :" + data_to_ff_d("shortest", "rise")
+    # print "data_to_ff_clk() :" + data_to_ff_clk("longest", "rise")
+    # print "data_to_ff_clk() :" + data_to_ff_clk("shortest", "rise")
+    # print "strobe_to_ff_clk() :" + strobe_to_ff_clk("shortest", "rise")
+    # print "strobe_to_ff_clk() :" + strobe_to_ff_clk("longest", "rise")+"\n"
+    #
+    # print "data_to_ff_d() :" + data_to_ff_d("longest", "fall")
+    # print "data_to_ff_d() :" + data_to_ff_d("shortest", "fall")
+    # print "data_to_ff_clk() :" + data_to_ff_clk("longest", "fall")
+    # print "data_to_ff_clk() :" + data_to_ff_clk("shortest", "fall")
+    # print "strobe_to_ff_clk() :" + strobe_to_ff_clk("shortest", "fall")
+    # print "strobe_to_ff_clk() :" + strobe_to_ff_clk("longest", "fall")
 
 
 if __name__ == "__main__":

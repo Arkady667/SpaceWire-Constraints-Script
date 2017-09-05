@@ -5,9 +5,12 @@
 import sys
 import subprocess
 import os.path
-import datetime
+from xlwt import Workbook
 
-start_time = datetime.datetime
+# Constants (RT ProASIC3)
+BIT_PERIOD = 20  # na
+FF_SETUP = 0.4  # na
+FF_HOLD = 0  # na
 
 spw_timing_report_list = []
 
@@ -16,7 +19,6 @@ spw_timing_report_list = []
 # dat_in_name = "iSpw0Dat"
 # reg_filter = r"*r.do*"
 ##
-
 
 
 def tcl_script(tcl_script_path, stb_in_name, dat_in_name, reg_filter_rise, reg_filter_fall, error_flag):
@@ -290,9 +292,19 @@ def strobe_to_ff_clk(long_or_short, fall_or_rise):
         return min(min_delay)
 
 
+def excel():
+
+    wb = Workbook()
+    setup_sheet = wb.add_sheet('Setup Check')
+    hold_sheet = wb.add_sheet('Hold Check')
+    pulsewidth_sheet = wb.add_sheet('Pulse Width Check')
+
+    wb.save('xlwt SpW Constraints.xls')
+
+
 def main(tcl_script_path, stb_in_name, dat_in_name, reg_filter_rise,reg_filter_fall, error_flag):
     tcl_script(tcl_script_path, stb_in_name, dat_in_name, reg_filter_rise, reg_filter_fall, error_flag)
-    print spw_timing_report_list
+    # print spw_timing_report_list
     print "data_to_ff_d() :" + data_to_ff_d("longest", "rise")
     print "data_to_ff_d() :" + data_to_ff_d("shortest", "fall")
     print "data_to_ff_clk() :" + data_to_ff_clk("longest", "fall")
