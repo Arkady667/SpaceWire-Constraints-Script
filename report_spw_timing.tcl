@@ -8,17 +8,14 @@
 ######################################################
 # running from cmd (without error handling option)
 # >designer "SCRIPT:spw.tcl iSpw0Stb iSpw0Dat *r.do*" "SCRIPT_DIR:<script path>" "LOGFILE:<log file name.log"
-# *iSpw0* - name of SpW inputs pins filter\
-# *r.do* - filter to input registers - rising edge
-# *nr.d* - filter to input registers - falling edge
+# iSpw0Stb - Strobe input pin
+# iSpw0Dat - Data input pin
+# *r.do* - filter to input registers [only r.do[1] are useful]
 # argv3 - error handling option:
 #					  [int] 1 - ON
 #	 			OTHER or NONE - OFF
 # running from cmd (with error handling option)
-# <path to>designer.exe "SCRIPT:spw.tcl iSpw0Stb iSpw0Dat *r.do* 1" "SCRIPT_DIR:C:\Users\aczuba\TCL\spw_script" "LOGFILE:spw_report.log"
-# v.2 # <path to>designer.exe "SCRIPT:report_spw_timing.tcl *iSpw0* *r.do* *nr.d* 1" "SCRIPT_DIR:C:\Users\aczuba\PycharmProjects\SpaceWire-Constraints" "LOGFILE:spw_report_timing.log"
-# <path to>C:\Microsemi\Libero_SoC_v11.8\Designer\bin\designer.exe
-# C:\Microsemi\Libero_SoC_v11.8\Designer\bin\designer.exe "SCRIPT:report_spw_timing.tcl *iSpw0* *r.do* *nr.d* 1" "SCRIPT_DIR:C:\Users\aczuba\PycharmProjects\SpaceWire-Constraints" "LOGFILE:spw_report_timing.log"
+# >designer "SCRIPT:report_spw_timing.tcl iSpw0Stb iSpw0Dat *r.do* *nr.d* 0" "SCRIPT_DIR:C:\Users\aczuba\PycharmProjects\SpaceWire-Constraints" "LOGFILE:spw_report_timing.log"
 ######################################################
 # Assign global argv variables to new variables
 set argv0 [lindex $::argv 0]
@@ -45,29 +42,33 @@ puts "$argv2 is argv2"
 puts "$argv3 is argv3"
 puts "$argv4 is argv4"
 
+
+
 # Variable which contain path to existing Designer design (.adb)
 set designFileTest {C:\Users\aczuba\PycharmProjects\SpaceWire-Constraints\P3_DPU.adb} 
 set designFile {C:\DPU FPGA repo v2\alllib\designs\P3CCB_RT\P3_DPU.adb}
 puts $designFile
 
 
-proc add_set_rise {from to errorFlag} {
+proc add_set_rise {fromStb fromDat toR errorFlag} {
 if {0} {\
-	Procedure adds new custom set of paths to SmartTime User Sets with rising edge clock capture \
+	Procedure adds new custom set of paths to SmartTime User Sets \
 
 	Args:\
-		from - name of SpW inputs pins filter\
-		to - input registers filter name \
+		fromStb - name of SpW Strobe input pin\
+		fromDat - name of SpW Data input pin\
+		toR - input registers filter name - rising edge\
+		toF - input registers filter name - falling edge\
 		errorFlag - error handlingflag value\
 
 	return: None
 }
 
-	st_create_set -name $::setNameStbR -source  $from -sink  $to
-	st_create_set -name $::setNameDatR -source $from -sink  $to
+	st_create_set -name $::setNameStbR -source  $fromStb -sink  $toR
+	st_create_set -name $::setNameDatR -source $fromDat -sink  $toR
 	puts "##########\nSETS ADDED\n##########"
 	if {$errorFlag == 1} {
-		if  { [catch {st_create_set -name  $::setNameStb -source  $fromStb -sink  $to }] || [catch {st_create_set -name $setNameDat -source $fromDat -sink  $to }]} {
+		if  { [catch {st_create_set -name  $::setNameStb -source  $fromStb -sink  $toR }] || [catch {st_create_set -name $::setNameDat -source $fromDat -sink  $toR }]} {
 			puts "Failed to set paths \n $::errorInfo \n"
 			# Handle Failure 
 		} 
@@ -75,30 +76,32 @@ if {0} {\
 	st_commit
 }
 
-proc add_set_fall {from to errorFlag} {
+
+proc add_set_fall {fromStb fromDat toF errorFlag} {
 if {0} {\
-	Procedure adds new custom set of paths to SmartTime User Sets with falling edge clock capture \
+	Procedure adds new custom set of paths to SmartTime User Sets \
 
 	Args:\
-		from - name of SpW inputs pins filter\
-		to - input registers filter name \
+		fromStb - name of SpW Strobe input pin\
+		fromDat - name of SpW Data input pin\
+		toR - input registers filter name - rising edge\
+		toF - input registers filter name - falling edge\
 		errorFlag - error handlingflag value\
 
 	return: None
 }
 
-	st_create_set -name $::setNameStbF -source  $from -sink  $to
-	st_create_set -name $::setNameDatF -source $from -sink  $to
+	st_create_set -name $::setNameStbF -source  $fromStb -sink  $toF
+	st_create_set -name $::setNameDatF -source $fromDat -sink  $toF
 	puts "##########\nSETS ADDED\n##########"
 	if {$errorFlag == 1} {
-		if  { [catch {st_create_set -name  $::setNameStbF -source  $from -sink  $to }] || [catch {st_create_set -name $setNameDatF -source $from -sink  $to }]} {
+		if  { [catch {st_create_set -name  $::setNameStb -source  $fromStb -sink  $toF }] || [catch {st_create_set -name $::setNameDat -source $fromDat -sink  $toF}]} {
 			puts "Failed to set paths \n $::errorInfo \n"
 			# Handle Failure 
 		} 
 	}
 	st_commit
 }
-
 
 
 proc list_set {errorFlag} {
@@ -112,13 +115,13 @@ if {0} {\
 }
 
 	puts "#################\nPATH LIST - START\n#################"
-	puts "\n------------\niSpwStbToCLK-RISE\n------------"
+	puts "\n------------iSpwStbToCLK-RISE------------"
 	st_list_paths -set $::setNameStbR
-	puts "\n------------\niSpwDatToReg-RISE\n------------"
+	puts "\n------------iSpwDatToReg-RISE------------"
 	st_list_paths -set $::setNameDatR
-	puts "\n------------\niSpwStbToCLK-FALL\n------------"
+	puts "\n------------iSpwStbToCLK-FALL------------"
 	st_list_paths -set $::setNameStbF
-	puts "\n------------\niSpwDatToReg-FALL\n------------"
+	puts "\n------------iSpwDatToReg-FALL------------"
 	st_list_paths -set $::setNameDatF  
 	puts "###############\nPATH LIST - END\n###############"
 	if {$errorFlag == 1} {
@@ -156,20 +159,21 @@ if {0} {\
 	st_commit
 }
 
-proc main_exec {from toR toF errorFlag} {
+proc main_exec {fromStb fromDat toR toF errorFlag} {
 if {0} {\
 	Main procedure. Controls procedure flow\
 
 	Args:\
-		from - name of SpW inputs pins filter\
+		fromStb - name of SpW Strobe input pin\
+		fromDat - name of SpW Data input pin\
 		toR - input registers filter name - rising edge\
 		toF - input registers filter name - falling edge\
 		errorFlag - error handlingflag value\
 
 	return: None
 }	
-	add_set_rise $from $toR $errorFlag
-	add_set_fall $from $toF $errorFlag
+	add_set_rise $fromStb $fromDat $toR $errorFlag
+	add_set_fall $fromStb $fromDat $toF $errorFlag
 	list_set $errorFlag
 	clear_set $errorFlag
 	# gen_report 
@@ -185,7 +189,7 @@ open_design $designFileTest
 		# Proceed to further preocssing 
 	} 
 
-main_exec $argv1 $argv2 $argv3 $argv4
+main_exec $argv0 $argv1 $argv2 $argv3 $argv4
 st_commit
 save_design {P3_DPU.adb}
 close_design

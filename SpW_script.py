@@ -16,10 +16,10 @@ spw_timing_report_list = []
 # dat_in_name = "iSpw0Dat"
 # reg_filter = r"*r.do*"
 ##
-print sys.argv[2]
 
 
-def tcl_script(tcl_script_path, stb_in_name, dat_in_name, reg_filter, error_flag):
+
+def tcl_script(tcl_script_path, stb_in_name, dat_in_name, reg_filter_rise, reg_filter_fall, error_flag):
     # line_one_space = []
     path_data = []
     path_number = 0
@@ -32,8 +32,8 @@ def tcl_script(tcl_script_path, stb_in_name, dat_in_name, reg_filter, error_flag
     # spw_timing_report_modtime = os.path.getmtime(tcl_script_path + r"\report_spw_timing.log")
     # Run TCL script report_spw_timing.tcl
     cmd = subprocess.Popen(
-        r'C:\Microsemi\Libero_SoC_v11.8\Designer\bin\designer.exe "SCRIPT:report_spw_timing.tcl {0} {1} {2} {3}" "SCRIPT_DIR:{4}" "LOGFILE:report_spw_timing.log"'.format(
-            stb_in_name, dat_in_name, reg_filter, error_flag, tcl_script_path), shell=True,
+        r'C:\Microsemi\Libero_SoC_v11.8\Designer\bin\designer.exe "SCRIPT:report_spw_timing.tcl {0} {1} {2} {3} {4}" "SCRIPT_DIR:{5}" "LOGFILE:report_spw_timing.log"'.format(
+            stb_in_name, dat_in_name, reg_filter_rise, reg_filter_fall, error_flag, tcl_script_path), shell=True,
         cwd=r"C:\Microsemi\Libero_SoC_v11.8\Designer").wait()
     # Simple cmd command error handling
     if cmd == 0:
@@ -46,7 +46,7 @@ def tcl_script(tcl_script_path, stb_in_name, dat_in_name, reg_filter, error_flag
     # spw_timing_report_modtime = os.path.getmtime(tcl_script_path + r"\report_spw_timing.log")
     # Reads report_spw_timing.log
     try:
-        f = open('spw_report.log', mode="rt")
+        f = open('report_spw_timing.log', mode="rt")  # report_spw_timing.log
         for line in f.readlines():
             # Looking for particular string in file, and takes flag up to parse Strobe part
             if line.find("iSpwStbToCLK-RISE") != (-1):
@@ -58,14 +58,17 @@ def tcl_script(tcl_script_path, stb_in_name, dat_in_name, reg_filter, error_flag
             if line.find("iSpwDatToReg-RISE") != (-1):
                 dat_flag_r = 1
                 stb_flag_r = 0
+                path_number = 0
                 continue
             if line.find("iSpwStbToCLK-FALL") != (-1):
                 dat_flag_r = 0
                 stb_flag_f = 1
+                path_number = 0
                 continue
             if line.find("iSpwDatToReg-FALL") != (-1):
                 dat_flag_f = 1
                 stb_flag_f = 0
+                path_number = 0
                 continue
             if start == 1:
                 # Looking for "Path" in log. When finds, append path number to path_data
@@ -74,7 +77,6 @@ def tcl_script(tcl_script_path, stb_in_name, dat_in_name, reg_filter, error_flag
                     path_data.append(path_number)
                 # if finds empty line - continue
                 elif not line.strip():  # ignores empty line (whitespaces)
-                    path_number = 0
                     continue
                 # Main parsing process
                 else:
@@ -94,23 +96,23 @@ def tcl_script(tcl_script_path, stb_in_name, dat_in_name, reg_filter, error_flag
                 if len(path_data) == 7:
                     # Adds data to main list - spw_timing_report_list
                     if stb_flag_r == 1:
-                        add_path_strobe_r(path_data[0], path_data[1], path_data[2], path_data[3], path_data[4],
+                        add_path_strobe("rise", path_data[0], path_data[1], path_data[2], path_data[3], path_data[4],
                                         path_data[5], path_data[6])
                         path_data[:] = []
                     # Adds data to main list - spw_timing_report_list
                     if dat_flag_r == 1:
-                        add_path_data_r(path_data[0], path_data[1], path_data[2], path_data[3], path_data[4],
+                        add_path_data("rise", path_data[0], path_data[1], path_data[2], path_data[3], path_data[4],
                                       path_data[5],
                                       path_data[6])
                         path_data[:] = []
                     # Adds data to main list - spw_timing_report_list
                     if stb_flag_f == 1:
-                        add_path_strobe_f(path_data[0], path_data[1], path_data[2], path_data[3], path_data[4],
+                        add_path_strobe("fall", path_data[0], path_data[1], path_data[2], path_data[3], path_data[4],
                                           path_data[5], path_data[6])
                         path_data[:] = []
                     # Adds data to main list - spw_timing_report_list
                     if dat_flag_f == 1:
-                        add_path_data_f(path_data[0], path_data[1], path_data[2], path_data[3], path_data[4],
+                        add_path_data("fall", path_data[0], path_data[1], path_data[2], path_data[3], path_data[4],
                                           path_data[5], path_data[6])
                         path_data[:] = []
                 # Searches for "#". "#" mean end of parsing
@@ -120,13 +122,18 @@ def tcl_script(tcl_script_path, stb_in_name, dat_in_name, reg_filter, error_flag
     except Exception as error:
         print("Could not read file")
         print(error)
-    print spw_timing_report_list
+    # print spw_timing_report_list
 
 
-def add_path_strobe_r(number, ffrom, to, delay, slack, arrival, required):
+def add_path_strobe(fall_or_rise, number, ffrom, to, delay, slack, arrival, required):
 
-    path_strobe_r = {
-        "clock": "rise",
+    if fall_or_rise == "rise":
+        edge = "rise"
+    else:
+        edge = "fall"
+
+    path_strobe = {
+        "clock": edge,
         "type": "Strobe",
         "number": number,
         "from": ffrom,
@@ -136,29 +143,34 @@ def add_path_strobe_r(number, ffrom, to, delay, slack, arrival, required):
         "arrival": arrival,
         "required": required
     }
-    spw_timing_report_list.append(path_strobe_r)
+    spw_timing_report_list.append(path_strobe)
+
+#
+# def add_path_strobe_f(number, ffrom, to, delay, slack, arrival, required):
+#
+#     path_strobe_f = {
+#         "clock": "fall",
+#         "type": "Strobe",
+#         "number": number,
+#         "from": ffrom,
+#         "to": to,
+#         "delay": delay,
+#         "slack": slack,
+#         "arrival": arrival,
+#         "required": required
+#     }
+#     spw_timing_report_list.append(path_strobe_f)
 
 
-def add_path_strobe_f(number, ffrom, to, delay, slack, arrival, required):
+def add_path_data(fall_or_rise, number, ffrom, to, delay, slack, arrival, required):
 
-    path_strobe_f = {
-        "clock": "fall",
-        "type": "Strobe",
-        "number": number,
-        "from": ffrom,
-        "to": to,
-        "delay": delay,
-        "slack": slack,
-        "arrival": arrival,
-        "required": required
-    }
-    spw_timing_report_list.append(path_strobe_f)
+    if fall_or_rise == "rise":
+        edge = "rise"
+    else:
+        edge = "fall"
 
-
-def add_path_data_r(number, ffrom, to, delay, slack, arrival, required):
-
-    path_data_r = {
-        "clock": "rise",
+    path_data = {
+        "clock": edge,
         "type": "Data",
         "number": number,
         "from": ffrom,
@@ -168,23 +180,23 @@ def add_path_data_r(number, ffrom, to, delay, slack, arrival, required):
         "arrival": arrival,
         "required": required
     }
-    spw_timing_report_list.append(path_data_r)
+    spw_timing_report_list.append(path_data)
 
 
-def add_path_data_f(number, ffrom, to, delay, slack, arrival, required):
-
-    path_data_f = {
-        "clock": "fall",
-        "type": "Data",
-        "number": number,
-        "from": ffrom,
-        "to": to,
-        "delay": delay,
-        "slack": slack,
-        "arrival": arrival,
-        "required": required
-    }
-    spw_timing_report_list.append(path_data_f)
+# def add_path_data_f(number, ffrom, to, delay, slack, arrival, required):
+#
+#     path_data_f = {
+#         "clock": "fall",
+#         "type": "Data",
+#         "number": number,
+#         "from": ffrom,
+#         "to": to,
+#         "delay": delay,
+#         "slack": slack,
+#         "arrival": arrival,
+#         "required": required
+#     }
+#     spw_timing_report_list.append(path_data_f)
 
 
 def data_to_ff_d(fall_or_rise, long_or_short):
@@ -277,8 +289,8 @@ def strobe_to_ff_clk(fall_or_rise, long_or_short):
             print "WARNING (strobe_to_ff_clk): Wrong first argument. Write 'longest' or 'shortest'"
 
 
-def main(tcl_script_path, stb_in_name, dat_in_name, reg_filter, error_flag):
-    tcl_script(tcl_script_path, stb_in_name, dat_in_name, reg_filter, error_flag)
+def main(tcl_script_path, stb_in_name, dat_in_name, reg_filter_rise,reg_filter_fall, error_flag):
+    tcl_script(tcl_script_path, stb_in_name, dat_in_name, reg_filter_rise, reg_filter_fall, error_flag)
     print spw_timing_report_list
     # print "data_to_ff_d() :" + data_to_ff_d("longest", "rise")
     # print "data_to_ff_d() :" + data_to_ff_d("longest", "fall")
@@ -288,6 +300,5 @@ def main(tcl_script_path, stb_in_name, dat_in_name, reg_filter, error_flag):
     # print "strobe_to_ff_clk() :" + strobe_to_ff_clk("shortest", "fall")
 
 
-
 if __name__ == "__main__":
-    main(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
+    main(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6])
