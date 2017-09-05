@@ -145,22 +145,6 @@ def add_path_strobe(fall_or_rise, number, ffrom, to, delay, slack, arrival, requ
     }
     spw_timing_report_list.append(path_strobe)
 
-#
-# def add_path_strobe_f(number, ffrom, to, delay, slack, arrival, required):
-#
-#     path_strobe_f = {
-#         "clock": "fall",
-#         "type": "Strobe",
-#         "number": number,
-#         "from": ffrom,
-#         "to": to,
-#         "delay": delay,
-#         "slack": slack,
-#         "arrival": arrival,
-#         "required": required
-#     }
-#     spw_timing_report_list.append(path_strobe_f)
-
 
 def add_path_data(fall_or_rise, number, ffrom, to, delay, slack, arrival, required):
 
@@ -183,121 +167,138 @@ def add_path_data(fall_or_rise, number, ffrom, to, delay, slack, arrival, requir
     spw_timing_report_list.append(path_data)
 
 
-# def add_path_data_f(number, ffrom, to, delay, slack, arrival, required):
-#
-#     path_data_f = {
-#         "clock": "fall",
-#         "type": "Data",
-#         "number": number,
-#         "from": ffrom,
-#         "to": to,
-#         "delay": delay,
-#         "slack": slack,
-#         "arrival": arrival,
-#         "required": required
-#     }
-#     spw_timing_report_list.append(path_data_f)
-
-
-def data_to_ff_d(fall_or_rise, long_or_short):
+def data_to_ff_d(long_or_short, fall_or_rise):
     min_delay = []
     max_delay = []
+    fmin = 0
+    fmax = 0
     for path in spw_timing_report_list:
-        if long_or_short == "longest":
+        if long_or_short == "shortest":
             if fall_or_rise == "rise":
-                if path["type"] == "Data" and path["to"].find(":D" and "[1]") != (-1) and path["clock"] == "rise":
+                if path["type"] == "Data" and path["to"].find("[1]:D") != (-1) and path["clock"] == "rise":
                     min_delay.append(path["delay"])
-                    return min(min_delay)
+                    fmin = 1
             elif fall_or_rise == "fall":
-                if path["type"] == "Data" and path["to"].find(":D" and ("nr.d:" or "nr.d_")) != (-1) and path["clock"] == "fall":
+                if path["type"] == "Data" and (":D" in path["to"]) and (("nr.d:" in path["to"]) or ("nr.d_tmr" in path["to"])) and (path["clock"] == "fall"):
                     min_delay.append(path["delay"])
-                    return min(min_delay)
+                    # if len(min_delay) == 3:
+                    #     return min(min_delay)
+                    fmin = 1
             else:
                 print "WARNING (data_to_ff_d): Wrong second argument. Write 'rise' or 'fall'"
-        elif long_or_short == "shortest":
+        elif long_or_short == "longest":
             if fall_or_rise == "rise":
-                if path["type"] == "Data" and path["to"].find(":D" and "[1]") != (-1) and path["clock"] == "rise":
+                if path["type"] == "Data" and path["to"].find("[1]:D") != (-1) and path["clock"] == "rise":
                     max_delay.append(path["delay"])
-                    return max(max_delay)
+                    fmax = 1
             elif fall_or_rise == "fall":
-                if path["type"] == "Data" and path["to"].find(":D" and ("nr.d:" or "nr.d_")) != (-1) and path["clock"] == "fall":
+                if path["type"] == "Data" and (":D" in path["to"]) and (("nr.d:" in path["to"]) or ("nr.d_tmr" in path["to"])) and (path["clock"] == "fall"):
                     max_delay.append(path["delay"])
-                    return max(max_delay)
+                    # if len(max_delay) == 3:
+                    #     return max(max_delay)
+                    fmax = 1
             else:
                 print "WARNING (data_to_ff_d): Wrong second argument. Write 'rise' or 'fall'"
         else:
             print "WARNING (data_to_ff_d): Wrong first argument. Write 'longest' or 'shortest'"
+    if fmax == 1:
+        return max(max_delay)
+    if fmin == 1:
+        return min(min_delay)
 
 
-def data_to_ff_clk(fall_or_rise, long_or_short):
+def data_to_ff_clk(long_or_short, fall_or_rise):
     max_delay = []
     min_delay = []
+    fmin = 0
+    fmax = 0
     for path in spw_timing_report_list:
         if long_or_short == "longest":
             if fall_or_rise == "rise":
-                if path["type"] == "Data" and path["to"].find(":CLK" and "[1]") != (-1) and path["clock"] == "rise":
+                if path["type"] == "Data" and path["to"].find("[1]:CLK") != (-1) and path["clock"] == "rise":
                     max_delay.append(path["delay"])
-                    return max(max_delay)
+                    fmax = 1
             elif fall_or_rise == "fall":
-                if path["type"] == "Data" and path["to"].find(":CLK" and ("nr.d:" or "nr.d_")) != (-1) and path["clock"] == "fall":
+                if path["type"] == "Data" and (":CLK" in path["to"]) and (path["clock"] == "fall") and (
+                        path["to"].find("nr.d:CLK") != (-1) or (path["to"].find("nr.d_tmr") != (-1))):
                     max_delay.append(path["delay"])
-                    return max(max_delay)
+                    fmax = 1
+                    # if len(max_delay) == 3:
+                    #     return max(max_delay)
             else:
                 print "WARNING (data_to_ff_clk): Wrong second argument. Write 'rise' or 'fall'"
+            # continue
         elif long_or_short == "shortest":
             if fall_or_rise == "rise":
-                if path["type"] == "Data" and path["to"].find(":CLK" and "[1]") != (-1) and path["clock"] == "rise":
+                if path["type"] == "Data" and path["to"].find("[1]:CLK") != (-1) and path["clock"] == "rise":
                     min_delay.append(path["delay"])
-                    return min(min_delay)
+                    fmin = 1
             elif fall_or_rise == "fall":
-                if path["type"] == "Data" and path["to"].find(":CLK" and ("nr.d:" or "nr.d_")) != (-1) and path["clock"] == "fall":
+                if path["type"] == "Data" and (":CLK" in path["to"]) and (
+                    ("nr.d:" in path["to"]) or ("nr.d_tmr" in path["to"])) and (path["clock"] == "fall") and (
+                        path["to"].find("nr.d:CLK") != (-1) or (path["to"].find("nr.d_tmr") != (-1))):
                     min_delay.append(path["delay"])
-                    return min(min_delay)
+                    # if len(min_delay) == 3:
+                    #     return min(min_delay)
+                    fmin = 1
             else:
                 print "WARNING (data_to_ff_clk): Wrong second argument. Write 'rise' or 'fall'"
+            # continue
         else:
             print "WARNING (data_to_ff_clk): Wrong first argument. Write 'longest' or 'shortest'"
+    if fmax == 1:
+        return max(max_delay)
+    if fmin == 1:
+        return min(min_delay)
 
 
-def strobe_to_ff_clk(fall_or_rise, long_or_short):
+def strobe_to_ff_clk(long_or_short, fall_or_rise):
     min_delay = []
     max_delay = []
+    fmin = 0
+    fmax = 0
     for path in spw_timing_report_list:
-        if long_or_short == "longest":
+        if long_or_short == "shortest":
             if fall_or_rise == "rise":
-                if path["type"] == "Data" and path["to"].find(":CLK" and "[1]") != (-1) and path["clock"] == "rise":
+                if path["type"] == "Strobe" and path["to"].find("[1]:CLK") != (-1) and path["clock"] == "rise":
                     min_delay.append(path["delay"])
-                    return min(min_delay)
+                    fmin = 1
             elif fall_or_rise == "fall":
-                if path["type"] == "Data" and path["to"].find(":CLK" and ("nr.d:" or "nr.d_")) != (-1) and path["clock"] == "fall":
+                if path["type"] == "Strobe" and (":CLK" in path["to"]) and (("nr.d:" in path["to"]) or ("nr.d_tmr" in path["to"])) and (path["clock"] == "fall"):
                     min_delay.append(path["delay"])
-                    return min(min_delay)
+                    fmin = 1
             else:
                 print "WARNING (strobe_to_ff_clk): Wrong second argument. Write 'rise' or 'fall'"
-        elif long_or_short == "shortest":
+            continue
+        elif long_or_short == "longest":
             if fall_or_rise == "rise":
-                if path["type"] == "Data" and path["to"].find(":CLK" and "[1]") != (-1) and path["clock"] == "rise":
+                if path["type"] == "Strobe" and path["to"].find("[1]:CLK") != (-1) and path["clock"] == "rise":
                     max_delay.append(path["delay"])
-                    return max(max_delay)
+                    fmax = 1
             elif fall_or_rise == "fall":
-                if path["type"] == "Data" and path["to"].find(":CLK" and ("nr.d:" or "nr.d_")) != (-1) and path["clock"] == "fall":
+                if path["type"] == "Strobe" and (":CLK" in path["to"]) and (("nr.d:" in path["to"]) or ("nr.d_tmr" in path["to"])) and (path["clock"] == "fall"):
                     max_delay.append(path["delay"])
-                    return max(max_delay)
+                    fmax = 1
             else:
                 print "WARNING (strobe_to_ff_clk): Wrong second argument. Write 'rise' or 'fall'"
+            continue
         else:
             print "WARNING (strobe_to_ff_clk): Wrong first argument. Write 'longest' or 'shortest'"
+    if fmax == 1:
+        return max(max_delay)
+    if fmin == 1:
+        return min(min_delay)
 
 
 def main(tcl_script_path, stb_in_name, dat_in_name, reg_filter_rise,reg_filter_fall, error_flag):
     tcl_script(tcl_script_path, stb_in_name, dat_in_name, reg_filter_rise, reg_filter_fall, error_flag)
     print spw_timing_report_list
-    # print "data_to_ff_d() :" + data_to_ff_d("longest", "rise")
-    # print "data_to_ff_d() :" + data_to_ff_d("longest", "fall")
-    # print "data_to_ff_clk() :" + data_to_ff_clk("longest", "rise")
-    # print "data_to_ff_clk() :" + data_to_ff_clk("shortest", "rise")
-    # print "strobe_to_ff_clk() :" + strobe_to_ff_clk("longest", "rise")
-    # print "strobe_to_ff_clk() :" + strobe_to_ff_clk("shortest", "fall")
+    print "data_to_ff_d() :" + data_to_ff_d("longest", "rise")
+    print "data_to_ff_d() :" + data_to_ff_d("shortest", "fall")
+    print "data_to_ff_clk() :" + data_to_ff_clk("longest", "fall")
+    print "data_to_ff_clk() :" + data_to_ff_clk("shortest", "rise")
+    print "strobe_to_ff_clk() :" + strobe_to_ff_clk("shortest", "rise")
+    print "strobe_to_ff_clk() :" + strobe_to_ff_clk("longest", "fall")
 
 
 if __name__ == "__main__":
