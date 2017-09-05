@@ -15,7 +15,7 @@
 #					  [int] 1 - ON
 #	 			OTHER or NONE - OFF
 # running from cmd (with error handling option)
-# >designer "SCRIPT:report_spw_timing.tcl iSpw0Stb iSpw0Dat *r.do* *nr.d* 0" "SCRIPT_DIR:C:\Users\aczuba\PycharmProjects\SpaceWire-Constraints" "LOGFILE:spw_report_timing.log"
+# >designer "SCRIPT:report_spw_timing.tcl iSpw0Stb iSpw0Dat *r.do* *nr.d* 0" "SCRIPT_DIR:C:\Users\aczuba\PycharmProjects\SpaceWire-Constraints" "LOGFILE:report_spw_timing.log"
 ######################################################
 # Assign global argv variables to new variables
 set argv0 [lindex $::argv 0]
