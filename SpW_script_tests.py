@@ -12,8 +12,53 @@ BIT_PERIOD = 20  # na
 FF_SETUP = 0.4  # na
 FF_HOLD = 0  # na
 
-# xlwr
+# xlwt
 wb = xlwt.Workbook()
+
+# xlwt styles
+patternBackground = xlwt.Pattern()
+patternBackground.pattern = patternBackground.SOLID_PATTERN
+patternBackground.pattern = patternBackground.pattern_back_colour = 0x02
+
+styleHeader = xlwt.XFStyle()
+styleHeader.font.bold = True
+styleHeader.font.height = 250
+
+styleFormulaLeft = xlwt.XFStyle()
+styleFormulaLeft.pattern = patternBackground
+styleFormulaLeft.font.italic = True
+styleFormulaLeft.font.height = 200
+styleFormulaLeft.alignment.horz = styleFormulaLeft.alignment.HORZ_RIGHT
+styleFormulaLeft.alignment.vert = styleFormulaLeft.alignment.VERT_CENTER
+
+styleText = xlwt.XFStyle()
+styleText.font.italic = True
+styleText.font.height = 200
+styleText.alignment.horz = styleText.alignment.HORZ_LEFT
+styleText.alignment.vert = styleText.alignment.VERT_CENTER
+styleText.alignment.wrap = styleText.alignment.WRAP_AT_RIGHT
+
+styleFormulaRight = xlwt.XFStyle()
+styleFormulaRight.pattern = patternBackground
+styleFormulaRight.font.italic = True
+styleFormulaRight.font.height = 200
+styleFormulaRight.alignment.horz = styleFormulaRight.alignment.HORZ_LEFT
+styleFormulaRight.alignment.vert = styleFormulaRight.alignment.VERT_CENTER
+
+styleSign = xlwt.XFStyle()
+styleSign.pattern = patternBackground
+styleSign.font.bold = True
+styleSign.font.height = 300
+styleSign.alignment.horz = styleFormulaLeft.alignment.HORZ_CENTER
+styleSign.alignment.vert = styleFormulaLeft.alignment.VERT_CENTER
+
+
+styleBorder = xlwt.Borders()
+styleBorder.left = xlwt.Borders.MEDIUM
+styleBorder.right = xlwt.Borders.MEDIUM
+styleBorder.bottom = xlwt.Borders.MEDIUM
+styleBorder.top = xlwt.Borders.MEDIUM
+
 
 # Data list
 spw_timing_report_list = []
@@ -140,66 +185,65 @@ def excel():
 
 
     excel_doc()
-    setup_sheet = wb.add_sheet('Setup Check')
-    hold_sheet = wb.add_sheet('Hold Check')
-    pulsewidth_sheet = wb.add_sheet('Pulse Width Check')
+    excel_setup()
+    setup = wb.add_sheet(('Setup Check'))
+    hold = wb.add_sheet('Hold Check')
+    pulsewidth = wb.add_sheet('Pulse Width Check')
 
     wb.save('SpW Constraints.xls')
 
 
 def excel_doc():
-    style1 = xlwt.XFStyle()
-    style2 = xlwt.XFStyle()
-    style3 = xlwt.XFStyle()
 
-    styleHeader = xlwt.XFStyle()
-    styleHeader.font.bold = True
-    styleHeader.font.height = 250
-
-    styleFormulaLeft = xlwt.XFStyle()
-    styleFormulaLeft.font.italic = True
-    styleFormulaLeft.font.height = 200
-    styleFormulaLeft.alignment.horz = styleFormulaLeft.alignment.HORZ_RIGHT
-
-    styleFormulaRight = xlwt
-
-    font_bold = xlwt.Font()
-    font_italic = xlwt.Font()
-    font_height = xlwt.Font()
-
-    font_bold.bold = True
-    font_italic.italic = True
-    font_height.height = 300
-
-    style1.font = font_bold
-    style2.font = font_italic
-    style3.font = font_height
-
+    #Setup
     doc = wb.add_sheet('Formulas')
-    doc.write(1, 1, "Setup Check Formula", style=styleHeader)
+    doc.write(1, 1, "Hold Check Formula", style=styleHeader)
 
     col2 = doc.col(1)
-    col2.width = 256 * 35
-    doc.write(3, 1, "Longest (Data to FF:D", style=styleFormulaLeft)
+    col2.width = 256 * 44
+    doc.write(4, 1, "Longest ( Data to FF:D )", style=styleFormulaLeft)
 
     col3 = doc.col(2)
     col3.width = 256 * 5
-    doc.write(3, 2, "<", style=style3)
+    doc.write(4, 2, "<", style=styleSign)
 
     col4 = doc.col(3)
-    col4.width = 256 * 35
-    doc.write(3, 3, "Shortest (Data to FF:CLK) - FF Setup", style=style2)
+    col4.width = 256 * 68
+    doc.write(4, 3, "Shortest ( Data to FF:CLK ) - FF Setup", style=styleFormulaRight)
 
-    row2 = doc.row(1)
-    row2.height = 350
-    row4 = doc.row(3)
-    row4.height = 350
+    doc.write_merge(2, 3, 1, 3, "A setup check to ensure that a data event arrives on time to be captured by the clock edge generated with this same data event", style=styleText)
 
+    # Hold
+    doc.write(7, 1, "Setup Check Formula", style=styleHeader)
 
-# def excel_setup():
-#     pass
-#
-#
+    doc.write(10, 1, "If External Data SKEW")
+    doc.write(11, 1, "Bit_Period +  Data SKEW + Shortest( Data to FF:D )", style=styleFormulaLeft)
+    doc.write(11, 2, ">", style=styleSign)
+    doc.write(11, 3, "Longest( Strobe to FF:CK ) + Hold( FF )", style=styleFormulaRight)
+
+    doc.write(12, 1, "If External Strobe SKEW")
+    doc.write(13, 1, "Bit_Period + Strobe Skew + Shortest( Data to FF:D )", style=styleFormulaLeft)
+    doc.write(13, 2, ">", style=styleSign)
+    doc.write(13, 3, "Longest( Strobe to FF:CK ) + Hold( FF )", style=styleFormulaRight)
+    doc.write_merge(8, 9, 1, 3, "A hold check to ensure that a Strobe event is not generating a clock edge capturing the wrong data:", style=styleText)
+
+    # Pulse Width
+    doc.write(16, 1, "Pulse Width Check Formula", style=styleHeader)
+
+    doc.write(19, 1, "If External Data SKEW")
+    doc.write(20, 1, "Bit_Period - Data Skew", style=styleFormulaLeft)
+    doc.write(20, 2, ">", style=styleSign)
+    doc.write(20, 3, "Longest( Data to FF:CK ) - Shortest( Strobe to FF:CK ) + Setup( FF ) + Hold( FF )", style=styleFormulaRight)
+
+    doc.write(21, 1, "If External Strobe SKEW")
+    doc.write(22, 1, "Bit_Period - Strobe Skew", style=styleFormulaLeft)
+    doc.write(22, 2, ">", style=styleSign)
+    doc.write(22, 3, "Longest( Strobe to FF:CK ) - Shortest( Data to FF:CK ) + Setup( FF ) + Hold( FF )", style=styleFormulaRight)
+    doc.write_merge(17, 18, 1, 3, "A minimum pulse width on the Data-Strobe clock (XOR)", style=styleText)
+
+def excel_setup():
+    pass
+
 # def excel_hold():
 #     pass
 #
