@@ -760,5 +760,13 @@ def main(tcl_script_path, stb_in_name, dat_in_name, reg_filter_rise,reg_filter_f
     # print "strobe_to_ff_clk() :" + strobe_to_ff_clk("longest", "fall")
 
 
+    # print type(data_to_ff_d("longest", "rise"))
+    # print "data_to_ff_d() :" + data_to_ff_d("longest", "rise")
+    # print "data_to_ff_d() :" + data_to_ff_d("shortest", "fall")
+    # print "data_to_ff_clk() :" + data_to_ff_clk("longest", "fall")
+    # print "data_to_ff_clk() :" + data_to_ff_clk("shortest", "rise")
+    # print "strobe_to_ff_clk() :" + strobe_to_ff_clk("shortest", "rise")
+    # print "strobe_to_ff_clk() :" + strobe_to_ff_clk("longest", "fall")
+
 if __name__ == "__main__":
     main(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6])
